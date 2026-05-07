@@ -1,4 +1,3 @@
-print("🚀 Iniciando...")
 import os
 import numpy as np
 import faiss
@@ -125,5 +124,48 @@ print(f"   Vetores indexados : {index.ntotal}")
 print(f"   Dimensão          : {DIMENSION}")
 print(f"   M                 : {M}")
 print(f"   ef_construction   : {ef_construction}")
+
+# =============================================================================
+# PASSO 2 — HYDE: QUERY TRANSFORMATION VIA LLM
+# =============================================================================
+
+def gerar_documento_hipotetico(query_coloquial: str) -> str:
+    prompt_hyde = f"""Você é um redator de manuais médicos técnicos.
+Um paciente descreveu seu problema da seguinte forma coloquial:
+\"{query_coloquial}\"
+
+Escreva um parágrafo curto (3-5 linhas) como se fosse um trecho de um manual médico técnico
+que descrevesse exatamente essa condição clínica usando terminologia médica especializada.
+Inclua: nome técnico da condição, fisiopatologia básica, sintomas clínicos com nomenclatura correta
+e opções terapêuticas de primeira linha.
+Escreva APENAS o trecho do manual, sem introduções ou explicações."""
+
+    resposta = openai_client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": prompt_hyde}],
+        max_tokens=300
+    )
+
+    return resposta.choices[0].message.content
+
+
+QUERY_USUARIO = "dor de cabeça latejante e luz incomodando"
+
+print(f"\n{'='*70}")
+print(f"📝 Query coloquial do usuário: '{QUERY_USUARIO}'")
+print(f"{'='*70}")
+print("\n⏳ Gerando documento hipotético via LLM (HyDE)...\n")
+
+documento_hipotetico = gerar_documento_hipotetico(QUERY_USUARIO)
+
+print("📄 DOCUMENTO HIPOTÉTICO GERADO PELO LLM:")
+print("-" * 70)
+print(documento_hipotetico)
+print("-" * 70)
+
+vetor_hyde = bi_encoder.encode([documento_hipotetico], convert_to_numpy=True).astype(np.float32)
+faiss.normalize_L2(vetor_hyde)
+
+print(f"\n✅ Vetor HyDE gerado! Shape: {vetor_hyde.shape}")
  
  
