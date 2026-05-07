@@ -183,3 +183,50 @@ for rank, (idx, dist, doc) in enumerate(docs_recuperados, start=1):
     print()
 
 print("✅ Recuperação via HNSW concluída!")
+
+print(f"\n{'='*70}")
+print("PASSO 4 — Re-ranking com Cross-Encoder")
+print(f"{'='*70}\n")
+
+print("Carregando Cross-Encoder...")
+cross_encoder = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
+print("Cross-Encoder carregado!\n")
+
+pares_query_doc = [(QUERY_USUARIO, doc) for (_, _, doc) in docs_recuperados]
+
+print(f"Calculando scores para {K} documentos...\n")
+scores = cross_encoder.predict(pares_query_doc)
+
+docs_com_score = [
+    (score, idx, doc)
+    for score, (idx, _, doc) in zip(scores, docs_recuperados)
+]
+docs_reranqueados = sorted(docs_com_score, key=lambda x: x[0], reverse=True)
+
+print("RANKING COMPLETO PÓS CROSS-ENCODER:\n")
+for rank, (score, idx, doc) in enumerate(docs_reranqueados, start=1):
+    marcador = "🏆" if rank <= 3 else "  "
+    print(f"{marcador} #{rank} | Índice: {idx:02d} | Score: {score:.4f}")
+    print(f"     {doc[:100]}...")
+    print()
+
+TOP_3 = docs_reranqueados[:3]
+
+print(f"\n{'='*70}")
+print("TOP-3 DOCUMENTOS FINAIS — INJETADOS NO CONTEXTO DO LLM:")
+print(f"{'='*70}\n")
+
+for rank, (score, idx, doc) in enumerate(TOP_3, start=1):
+    print(f"{'─'*70}")
+    print(f"  DOCUMENTO #{rank} | Índice: {idx} | Score: {score:.4f}")
+    print(f"{'─'*70}")
+    print(doc)
+    print()
+
+print(f"{'='*70}")
+print("Pipeline RAG Avançado completo!")
+print(f"   Query original  : '{QUERY_USUARIO}'")
+print(f"   Docs indexados  : {index.ntotal}")
+print(f"   Candidatos HNSW : {K}")
+print(f"   Docs finais     : 3")
+print(f"{'='*70}")
