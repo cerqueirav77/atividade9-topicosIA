@@ -125,10 +125,6 @@ print(f"   Dimensão          : {DIMENSION}")
 print(f"   M                 : {M}")
 print(f"   ef_construction   : {ef_construction}")
 
-# =============================================================================
-# PASSO 2 — HYDE: QUERY TRANSFORMATION VIA LLM
-# =============================================================================
-
 def gerar_documento_hipotetico(query_coloquial: str) -> str:
     prompt_hyde = f"""Você é um redator de manuais médicos técnicos.
 Um paciente descreveu seu problema da seguinte forma coloquial:
@@ -168,4 +164,22 @@ faiss.normalize_L2(vetor_hyde)
 
 print(f"\n✅ Vetor HyDE gerado! Shape: {vetor_hyde.shape}")
  
- 
+K = 10
+print(f"\n{'='*70}")
+print(f"🔍 PASSO 3 — Busca Top-{K} no índice HNSW")
+print(f"{'='*70}\n")
+
+distancias, indices = index.search(vetor_hyde, K)
+
+docs_recuperados = [
+    (indices[0][i], distancias[0][i], documentos[indices[0][i]])
+    for i in range(K)
+]
+
+print(f"📋 TOP-{K} DOCUMENTOS — RECUPERAÇÃO RÁPIDA VIA HNSW:\n")
+for rank, (idx, dist, doc) in enumerate(docs_recuperados, start=1):
+    print(f"[#{rank}] Índice: {idx:02d} | Distância L2: {dist:.4f}")
+    print(f"  {doc[:110]}...")
+    print()
+
+print("✅ Recuperação via HNSW concluída!")
